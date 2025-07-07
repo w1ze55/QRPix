@@ -106,6 +106,40 @@ function gerarPixEMV(): string {
   }
 }
 
+function gerarQRCode() {
+    try {
+        const pixChaveLimpa = chavePix.value?.trim();
+        const nomeLimpo = nome.value?.trim();
+        const cidadeLimpa = cidade.value?.trim();
+
+        if (!pixChaveLimpa || !nomeLimpo || !cidadeLimpa) {
+            mostrarMensagem('Por favor, preencha todos os campos obrigatórios.', 'erro');
+            return;
+        }
+        const pixEMV = gerarPixEMV()
+        const tamanho = '300x300'
+        const urlApi = `https://api.qrserver.com/v1/create-qr-code/?size=${tamanho}&data=${encodeURIComponent(pixEMV)}`
+
+        qrCodeUrl.value = urlApi;
+
+        mostrarMensagem('QR Code gerado com sucesso!', 'sucesso');
+
+    } catch (error) {
+        console.error('Erro ao gerar QR Code:', error)
+        mostrarMensagem('Erro ao gerar QR Code. Verifique os campos e tente novamente.', 'erro');
+        return;
+    }
+}
+
+function limparTudo() {
+  chavePix.value = ''
+  nome.value = ''
+  cidade.value = ''
+  valor.value = ''
+  descricao.value = ''
+  qrCodeUrl.value = ''
+  mostrarMensagem('Formulário limpo!', 'sucesso')
+}
 
 </script>
 
