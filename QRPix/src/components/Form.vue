@@ -16,11 +16,11 @@ function mostrarMensagem(mensagem: string, tipo: string = 'erro') {
     mostrarPopUp.value = true;
     mensagemPopup.value = mensagem;
     tipoPopup.value = tipo;
+    
+    setTimeout(() => {
+        mostrarPopUp.value = false;
+    }, 2000);
 }
-
-setTimeout(() => {
-    mostrarPopUp.value = false;
-}, 2000);
 
 function fecharPopUp() {
     mostrarPopUp.value = false;
@@ -191,7 +191,16 @@ function limparTudo() {
                 <label>Descrição (opcional):</label>
                 <input v-model="descricao" type="text" placeholder="Descrição do pagamento" />
             </div>
+            
         </div>
+        <div class="botoes">
+        <button @click="gerarQRCode" class="botao-principal">
+          ✨ Gerar QR Code PIX
+        </button>
+        <button @click="limparTudo" class="botao-limpar">
+          🗑️ Limpar
+        </button>
+      </div>
     </div>
 </template>
 
