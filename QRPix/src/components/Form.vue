@@ -7,6 +7,7 @@ const cidade = ref('');
 const valor = ref('');
 const descricao = ref('');
 const qrCodeUrl = ref('');
+const pixCodeDebug = ref('');
 
 const mostrarPopUp = ref(false);
 const mensagemPopup = ref('');
@@ -28,24 +29,24 @@ function fecharPopUp() {
 
 function calcularCRC16(payload: string): string {
     const data = payload + '6304';
-    const polinomio = 0x1021
-    let resultado = 0xFFFF
+    const polinomio = 0x1021;
+    let crc = 0xFFFF;
 
     for (let i = 0; i < data.length; i++) {
-        resultado ^= (data.charCodeAt(i) << 8)
+        crc ^= (data.charCodeAt(i) << 8);
         for (let j = 0; j < 8; j++) {
-            if (resultado & 0x8000) {
-                resultado = (resultado << 1) ^ polinomio
+            if (crc & 0x8000) {
+                crc = (crc << 1) ^ polinomio;
             } else {
-                resultado = resultado << 1
+                crc = crc << 1;
             }
-            resultado &= 0xFFFF
+            crc &= 0xFFFF;
         }
     }
-    return resultado.toString(16).toUpperCase().padStart(4, '0')
+    
+    return crc.toString(16).toUpperCase().padStart(4, '0');
 }
 
-// Alguns console.log para debug
 function gerarPixEMV(): string {
     try {
         console.log('Iniciando geração PIX EMV')
@@ -53,51 +54,44 @@ function gerarPixEMV(): string {
         let pixString = ''
 
         pixString += '000201'
-        console.log('Após 00:', pixString)
 
         const pixKeyLength = chavePix.value.length.toString().padStart(2, '0')
         const pixKeyData = `01${pixKeyLength}${chavePix.value}`
         const merchantAccountInfo = `0014BR.GOV.BCB.PIX${pixKeyData}`
         pixString += `26${merchantAccountInfo.length.toString().padStart(2, '0')}${merchantAccountInfo}`
-        console.log('Após 26:', pixString)
 
         pixString += '52040000'
-        console.log('Após 52:', pixString)
 
         pixString += '5303986'
-        console.log('Após 53:', pixString)
 
         if (valor.value && parseFloat(valor.value) > 0) {
             const valorFormatado = parseFloat(valor.value).toFixed(2)
             pixString += `54${valorFormatado.length.toString().padStart(2, '0')}${valorFormatado}`
-            console.log('Após 54:', pixString)
         }
 
         pixString += '5802BR'
-        console.log('Após 58:', pixString)
 
-        const nomeFormatado = nome.value.toUpperCase()
+        const nomeFormatado = nome.value.toUpperCase().substring(0, 25)
         pixString += `59${nomeFormatado.length.toString().padStart(2, '0')}${nomeFormatado}`
-        console.log('Após 59:', pixString)
 
-        const cidadeFormatada = cidade.value.toUpperCase()
+        const cidadeFormatada = cidade.value.toUpperCase().substring(0, 15)
         pixString += `60${cidadeFormatada.length.toString().padStart(2, '0')}${cidadeFormatada}`
-        console.log('Após 60:', pixString)
 
-        if (descricao.value) {
-            const descricaoFormatada = descricao.value.toUpperCase()
+        if (descricao.value && descricao.value.trim()) {
+            const descricaoFormatada = descricao.value.toUpperCase().substring(0, 25)
             const additionalDataField = `05${descricaoFormatada.length.toString().padStart(2, '0')}${descricaoFormatada}`
             pixString += `62${additionalDataField.length.toString().padStart(2, '0')}${additionalDataField}`
-            console.log('Após 62:', pixString)
         }
 
-        console.log('Calculando CRC16 para:', pixString)
         const crc = calcularCRC16(pixString)
-        console.log('CRC16 calculado:', crc)
         pixString += `6304${crc}`
 
         console.log('PIX final gerado:', pixString)
-        console.log('PIX EMV gerado com sucesso')
+        console.log('Tamanho:', pixString.length)
+        
+        if (pixString.length < 50 || pixString.length > 500) {
+            throw new Error('PIX gerado tem tamanho inválido')
+        }
 
         return pixString
     } catch (error) {
@@ -117,6 +111,8 @@ function gerarQRCode() {
             return;
         }
         const pixEMV = gerarPixEMV()
+        pixCodeDebug.value = pixEMV; // Armazenar para debug
+        
         const tamanho = '300x300'
         const urlApi = `https://api.qrserver.com/v1/create-qr-code/?size=${tamanho}&data=${encodeURIComponent(pixEMV)}`
 
@@ -198,8 +194,31 @@ function limparTudo() {
           ✨ Gerar QR Code PIX
         </button>
         <button @click="limparTudo" class="botao-limpar">
-          🗑️ Limpar
+        Limpar
         </button>
+      </div>
+
+      <div v-if="qrCodeUrl" class="resultado">
+        <h2>Seu código de pagamento foi gerado com sucesso!</h2>
+        <div class="qr-box">
+            <img :src="qrCodeUrl" alt="QR Code PIX">
+        </div>
+        <div class="info">
+            <p><strong>Chave PIX:</strong> {{ chavePix }}</p>
+            <p><strong>Nome:</strong> {{ nome }}</p>
+            <p><strong>Cidade:</strong> {{ cidade }}</p>
+            <p v-if="valor && parseFloat(valor) > 0"><strong>Valor:</strong> R$ {{ parseFloat(valor).toFixed(2) }}</p>
+            <p v-else><strong>Valor:</strong> Livre (a definir no pagamento)</p>
+            <p v-if="descricao"><strong>Descrição:</strong> {{ descricao }}</p>
+        </div>
+        <div class="debug-info">
+            <details>
+                <summary>🔍 Ver código PIX (debug)</summary>
+                <p style="word-break: break-all; font-family: monospace; font-size: 12px; background: #f0f0f0; color: #000; padding: 10px; border-radius: 5px;">
+                    {{ pixCodeDebug }}
+                </p>
+            </details>
+        </div>
       </div>
     </div>
 </template>
