@@ -237,7 +237,7 @@ function limparTudo() {
             <div class="header-section">
                 <div class="logo-container">
                     <img src="/src/assets/Logo.png" alt="QRPix Logo" class="logo" />
-                </div>
+        </div>
                 <h1 class="main-title">{{ config.app.title }}</h1>
                 <p class="subtitle">{{ config.app.description }}</p>
             </div>
@@ -263,7 +263,7 @@ function limparTudo() {
                                     placeholder="CPF, CNPJ, email, telefone ou chave aleatória"
                                     required
                                 />
-                            </div>
+            </div>
 
                             <div class="input-group">
                                 <label class="input-label">
@@ -277,7 +277,7 @@ function limparTudo() {
                                     placeholder="Digite seu nome completo"
                                     required
                                 />
-                            </div>
+            </div>
 
                             <div class="input-group">
                                 <label class="input-label">
@@ -291,7 +291,7 @@ function limparTudo() {
                                     placeholder="Digite sua cidade"
                                     required
                                 />
-                            </div>
+            </div>
 
                             <div class="input-group">
                                 <label class="input-label">
@@ -310,8 +310,8 @@ function limparTudo() {
                                     />
                                 </div>
                                 <small class="input-hint">Deixe em branco para valor livre</small>
-                            </div>
-
+            </div>
+            
                             <div class="input-group full-width">
                                 <label class="input-label">
                                     <span class="label-text">Descrição</span>
@@ -324,18 +324,18 @@ function limparTudo() {
                                     placeholder="Descrição do pagamento"
                                 />
                             </div>
-                        </div>
+        </div>
                         
                         <div class="button-group">
                             <button @click="gerarQRCode" class="btn btn-primary">
                                 <span class="btn-icon">✨</span>
                                 Gerar QR Code PIX
-                            </button>
+        </button>
                             <button @click="limparTudo" class="btn btn-secondary">
                                 <span class="btn-icon">🗑️</span>
                                 Limpar Formulário
-                            </button>
-                        </div>
+        </button>
+      </div>
                     </div>
                 </div>
 
@@ -380,7 +380,7 @@ function limparTudo() {
                                     <span class="info-value">{{ descricao }}</span>
                                 </div>
                             </div>
-                        </div>
+        </div>
                         
                         <div class="debug-section">
                             <details class="debug-details">
@@ -390,13 +390,13 @@ function limparTudo() {
                                 </summary>
                                 <div class="debug-content">
                                     <code class="debug-code">{{ pixCodeDebug }}</code>
-                                </div>
-                            </details>
+        </div>
+            </details>
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
+      </div>
     </div>
 </template>
 
@@ -798,7 +798,8 @@ html, body {
 
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
     gap: 10px;
     text-align: left;
     flex: 1;
