@@ -1,5 +1,33 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+
+// Configurações do ambiente
+const config = {
+    qrApi: {
+        url: import.meta.env.VITE_QR_API_URL || 'https://api.qrserver.com/v1/create-qr-code/',
+        size: import.meta.env.VITE_QR_SIZE || '300x300'
+    },
+    pix: {
+        countryCode: import.meta.env.VITE_PIX_COUNTRY_CODE || 'BR',
+        currencyCode: import.meta.env.VITE_PIX_CURRENCY_CODE || '986',
+        merchantCategory: import.meta.env.VITE_PIX_MERCHANT_CATEGORY || '0000'
+    },
+    limits: {
+        maxNameLength: Number(import.meta.env.VITE_PIX_MAX_NAME_LENGTH) || 25,
+        maxCityLength: Number(import.meta.env.VITE_PIX_MAX_CITY_LENGTH) || 15,
+        maxDescriptionLength: Number(import.meta.env.VITE_PIX_MAX_DESCRIPTION_LENGTH) || 25
+    },
+    app: {
+        title: import.meta.env.VITE_APP_TITLE || 'Gerador de QR Code PIX',
+        description: import.meta.env.VITE_APP_DESCRIPTION || 'Gere códigos PIX instantâneos de forma rápida e segura'
+    },
+    defaults: {
+        pixKey: import.meta.env.VITE_DEFAULT_PIX_KEY || '',
+        name: import.meta.env.VITE_DEFAULT_NAME || '',
+        city: import.meta.env.VITE_DEFAULT_CITY || ''
+    },
+    debug: import.meta.env.VITE_DEBUG_MODE === 'true'
+};
 
 const chavePix = ref('');
 const nome = ref('');
@@ -12,6 +40,17 @@ const pixCodeDebug = ref('');
 const mostrarPopUp = ref(false);
 const mensagemPopup = ref('');
 const tipoPopup = ref('erro');
+
+// Inicializar campos com valores padrão do .env
+onMounted(() => {
+    chavePix.value = config.defaults.pixKey;
+    nome.value = config.defaults.name;
+    cidade.value = config.defaults.city;
+    
+    if (config.debug) {
+        console.log('Configurações carregadas:', config);
+    }
+});
 
 function mostrarMensagem(mensagem: string, tipo: string = 'erro') {
     mostrarPopUp.value = true;
@@ -58,12 +97,13 @@ function calcularCRC16(payload: string): string {
 
 function gerarPixEMV(): string {
     try {
-        console.log('Iniciando geração PIX EMV')
+        if (config.debug) {
+            console.log('Iniciando geração PIX EMV com configurações:', config.pix);
+        }
 
         let pixString = ''
 
         pixString += '000201'
-
         pixString += '010212'
 
         const pixKeyLength = chavePix.value.length.toString().padStart(2, '0')
@@ -71,25 +111,25 @@ function gerarPixEMV(): string {
         const merchantAccountInfo = `0014BR.GOV.BCB.PIX${pixKeyField}`
         pixString += `26${merchantAccountInfo.length.toString().padStart(2, '0')}${merchantAccountInfo}`
 
-        pixString += '52040000'
+        pixString += `5204${config.pix.merchantCategory}`
 
-        pixString += '5303986'
+        pixString += `53${config.pix.currencyCode.length.toString().padStart(2, '0')}${config.pix.currencyCode}`
 
         if (valor.value && parseFloat(valor.value) > 0) {
             const valorFormatado = parseFloat(valor.value).toFixed(2)
             pixString += `54${valorFormatado.length.toString().padStart(2, '0')}${valorFormatado}`
         }
 
-        pixString += '5802BR'
+        pixString += `58${config.pix.countryCode.length.toString().padStart(2, '0')}${config.pix.countryCode}`
 
-        const nomeFormatado = limparCaracteres(nome.value).substring(0, 25)
+        const nomeFormatado = limparCaracteres(nome.value).substring(0, config.limits.maxNameLength)
         pixString += `59${nomeFormatado.length.toString().padStart(2, '0')}${nomeFormatado}`
 
-        const cidadeFormatada = limparCaracteres(cidade.value).substring(0, 15)
+        const cidadeFormatada = limparCaracteres(cidade.value).substring(0, config.limits.maxCityLength)
         pixString += `60${cidadeFormatada.length.toString().padStart(2, '0')}${cidadeFormatada}`
 
         if (descricao.value && descricao.value.trim()) {
-            const descricaoFormatada = descricao.value.substring(0, 25)
+            const descricaoFormatada = descricao.value.substring(0, config.limits.maxDescriptionLength)
             const additionalDataField = `05${descricaoFormatada.length.toString().padStart(2, '0')}${descricaoFormatada}`
             pixString += `62${additionalDataField.length.toString().padStart(2, '0')}${additionalDataField}`
         }
@@ -97,8 +137,10 @@ function gerarPixEMV(): string {
         const crc = calcularCRC16(pixString)
         pixString += `6304${crc}`
 
-        console.log('PIX final gerado:', pixString)
-        console.log('Tamanho:', pixString.length)
+        if (config.debug) {
+            console.log('PIX final gerado:', pixString);
+            console.log('Tamanho:', pixString.length);
+        }
         
         if (pixString.length < 50 || pixString.length > 500) {
             throw new Error('PIX gerado tem tamanho inválido')
@@ -122,19 +164,19 @@ function gerarQRCode() {
             return;
         }
 
-        // Validações adicionais
+        // Validações usando configurações do .env
         if (pixChaveLimpa.length < 1 || pixChaveLimpa.length > 77) {
             mostrarMensagem('Chave PIX deve ter entre 1 e 77 caracteres.', 'erro');
             return;
         }
 
-        if (nomeLimpo.length < 1 || nomeLimpo.length > 25) {
-            mostrarMensagem('Nome deve ter entre 1 e 25 caracteres.', 'erro');
+        if (nomeLimpo.length < 1 || nomeLimpo.length > config.limits.maxNameLength) {
+            mostrarMensagem(`Nome deve ter entre 1 e ${config.limits.maxNameLength} caracteres.`, 'erro');
             return;
         }
 
-        if (cidadeLimpa.length < 1 || cidadeLimpa.length > 15) {
-            mostrarMensagem('Cidade deve ter entre 1 e 15 caracteres.', 'erro');
+        if (cidadeLimpa.length < 1 || cidadeLimpa.length > config.limits.maxCityLength) {
+            mostrarMensagem(`Cidade deve ter entre 1 e ${config.limits.maxCityLength} caracteres.`, 'erro');
             return;
         }
 
@@ -143,11 +185,15 @@ function gerarQRCode() {
             return;
         }
 
+        if (descricao.value && descricao.value.length > config.limits.maxDescriptionLength) {
+            mostrarMensagem(`Descrição deve ter no máximo ${config.limits.maxDescriptionLength} caracteres.`, 'erro');
+            return;
+        }
+
         const pixEMV = gerarPixEMV()
         pixCodeDebug.value = pixEMV;
         
-        const tamanho = '300x300'
-        const urlApi = `https://api.qrserver.com/v1/create-qr-code/?size=${tamanho}&data=${encodeURIComponent(pixEMV)}`
+        const urlApi = `${config.qrApi.url}?size=${config.qrApi.size}&data=${encodeURIComponent(pixEMV)}`
 
         qrCodeUrl.value = urlApi;
 
@@ -161,13 +207,13 @@ function gerarQRCode() {
 }
 
 function limparTudo() {
-    chavePix.value = ''
-    nome.value = ''
-    cidade.value = ''
-    valor.value = ''
-    descricao.value = ''
-    qrCodeUrl.value = ''
-    mostrarMensagem('Formulário limpo!', 'sucesso')
+    chavePix.value = config.defaults.pixKey;
+    nome.value = config.defaults.name;
+    cidade.value = config.defaults.city;
+    valor.value = '';
+    descricao.value = '';
+    qrCodeUrl.value = '';
+    mostrarMensagem('Formulário limpo!', 'sucesso');
 }
 </script>
 
@@ -191,9 +237,9 @@ function limparTudo() {
             <div class="header-section">
                 <div class="logo-container">
                     <img src="/src/assets/Logo.png" alt="QRPix Logo" class="logo" />
-                </div>
-                <h1 class="main-title">Gerador de QR Code PIX</h1>
-                <p class="subtitle">Gere códigos PIX instantâneos de forma rápida e segura</p>
+        </div>
+                <h1 class="main-title">{{ config.app.title }}</h1>
+                <p class="subtitle">{{ config.app.description }}</p>
             </div>
 
             <div class="content-layout" :class="{ 'has-result': qrCodeUrl, 'centered': !qrCodeUrl }">
@@ -217,7 +263,7 @@ function limparTudo() {
                                     placeholder="CPF, CNPJ, email, telefone ou chave aleatória"
                                     required
                                 />
-                            </div>
+            </div>
 
                             <div class="input-group">
                                 <label class="input-label">
@@ -231,7 +277,7 @@ function limparTudo() {
                                     placeholder="Digite seu nome completo"
                                     required
                                 />
-                            </div>
+            </div>
 
                             <div class="input-group">
                                 <label class="input-label">
@@ -245,7 +291,7 @@ function limparTudo() {
                                     placeholder="Digite sua cidade"
                                     required
                                 />
-                            </div>
+            </div>
 
                             <div class="input-group">
                                 <label class="input-label">
@@ -264,8 +310,8 @@ function limparTudo() {
                                     />
                                 </div>
                                 <small class="input-hint">Deixe em branco para valor livre</small>
-                            </div>
-
+            </div>
+            
                             <div class="input-group full-width">
                                 <label class="input-label">
                                     <span class="label-text">Descrição</span>
@@ -278,18 +324,18 @@ function limparTudo() {
                                     placeholder="Descrição do pagamento"
                                 />
                             </div>
-                        </div>
+        </div>
                         
                         <div class="button-group">
                             <button @click="gerarQRCode" class="btn btn-primary">
                                 <span class="btn-icon">✨</span>
                                 Gerar QR Code PIX
-                            </button>
+        </button>
                             <button @click="limparTudo" class="btn btn-secondary">
                                 <span class="btn-icon">🗑️</span>
                                 Limpar Formulário
-                            </button>
-                        </div>
+        </button>
+      </div>
                     </div>
                 </div>
 
@@ -334,7 +380,7 @@ function limparTudo() {
                                     <span class="info-value">{{ descricao }}</span>
                                 </div>
                             </div>
-                        </div>
+        </div>
                         
                         <div class="debug-section">
                             <details class="debug-details">
@@ -344,13 +390,13 @@ function limparTudo() {
                                 </summary>
                                 <div class="debug-content">
                                     <code class="debug-code">{{ pixCodeDebug }}</code>
-                                </div>
-                            </details>
+        </div>
+            </details>
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
+      </div>
     </div>
 </template>
 
@@ -752,7 +798,8 @@ html, body {
 
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
     gap: 10px;
     text-align: left;
     flex: 1;
