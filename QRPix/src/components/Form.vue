@@ -27,6 +27,15 @@ function fecharPopUp() {
     mostrarPopUp.value = false;
 }
 
+function limparCaracteres(texto: string): string {
+    return texto
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^A-Za-z0-9\s]/g, '')
+        .trim()
+        .toUpperCase();
+}
+
 function calcularCRC16(payload: string): string {
     const data = payload + '6304';
     const polinomio = 0x1021;
@@ -55,9 +64,11 @@ function gerarPixEMV(): string {
 
         pixString += '000201'
 
+        pixString += '010212'
+
         const pixKeyLength = chavePix.value.length.toString().padStart(2, '0')
-        const pixKeyData = `01${pixKeyLength}${chavePix.value}`
-        const merchantAccountInfo = `0014BR.GOV.BCB.PIX${pixKeyData}`
+        const pixKeyField = `01${pixKeyLength}${chavePix.value}`
+        const merchantAccountInfo = `0014BR.GOV.BCB.PIX${pixKeyField}`
         pixString += `26${merchantAccountInfo.length.toString().padStart(2, '0')}${merchantAccountInfo}`
 
         pixString += '52040000'
@@ -71,14 +82,14 @@ function gerarPixEMV(): string {
 
         pixString += '5802BR'
 
-        const nomeFormatado = nome.value.toUpperCase().substring(0, 25)
+        const nomeFormatado = limparCaracteres(nome.value).substring(0, 25)
         pixString += `59${nomeFormatado.length.toString().padStart(2, '0')}${nomeFormatado}`
 
-        const cidadeFormatada = cidade.value.toUpperCase().substring(0, 15)
+        const cidadeFormatada = limparCaracteres(cidade.value).substring(0, 15)
         pixString += `60${cidadeFormatada.length.toString().padStart(2, '0')}${cidadeFormatada}`
 
         if (descricao.value && descricao.value.trim()) {
-            const descricaoFormatada = descricao.value.toUpperCase().substring(0, 25)
+            const descricaoFormatada = descricao.value.substring(0, 25)
             const additionalDataField = `05${descricaoFormatada.length.toString().padStart(2, '0')}${descricaoFormatada}`
             pixString += `62${additionalDataField.length.toString().padStart(2, '0')}${additionalDataField}`
         }
@@ -110,8 +121,30 @@ function gerarQRCode() {
             mostrarMensagem('Por favor, preencha todos os campos obrigatórios.', 'erro');
             return;
         }
+
+        // Validações adicionais
+        if (pixChaveLimpa.length < 1 || pixChaveLimpa.length > 77) {
+            mostrarMensagem('Chave PIX deve ter entre 1 e 77 caracteres.', 'erro');
+            return;
+        }
+
+        if (nomeLimpo.length < 1 || nomeLimpo.length > 25) {
+            mostrarMensagem('Nome deve ter entre 1 e 25 caracteres.', 'erro');
+            return;
+        }
+
+        if (cidadeLimpa.length < 1 || cidadeLimpa.length > 15) {
+            mostrarMensagem('Cidade deve ter entre 1 e 15 caracteres.', 'erro');
+            return;
+        }
+
+        if (valor.value && (parseFloat(valor.value) < 0 || parseFloat(valor.value) > 99999999.99)) {
+            mostrarMensagem('Valor deve estar entre 0 e 99.999.999,99.', 'erro');
+            return;
+        }
+
         const pixEMV = gerarPixEMV()
-        pixCodeDebug.value = pixEMV; // Armazenar para debug
+        pixCodeDebug.value = pixEMV;
         
         const tamanho = '300x300'
         const urlApi = `https://api.qrserver.com/v1/create-qr-code/?size=${tamanho}&data=${encodeURIComponent(pixEMV)}`
@@ -223,4 +256,5 @@ function limparTudo() {
     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>
