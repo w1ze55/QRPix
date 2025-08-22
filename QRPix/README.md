@@ -1,33 +1,18 @@
-# QRPix
+# QRPix - Perfeitinhos
 
-This template should help get you started developing with Vue 3 in Vite.
+Um simples gerador de QR Pix desenvolvido para a empresa **Perfeitinhos**.  
+O projeto tem como objetivo facilitar a geração de QR Codes para pagamentos via Pix, de forma prática e rápida.
 
-## Recommended IDE Setup
+## Como iniciar o projeto
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+### Copie o .env para obter as configurações necessárias do projeto
+```
+cp .env.example .env
+```
 
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
+### Instalar dependências
 ```sh
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 npm run dev
-```
-
-### Type-Check, Compile and Minify for Production
-
-```sh
 npm run build
 ```
