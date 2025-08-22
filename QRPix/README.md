@@ -16,3 +16,7 @@ npm install
 npm run dev
 npm run build
 ```
+
+## Tecnologias utilizadas
+ - VueJs
+ - TypeScript
