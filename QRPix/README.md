@@ -14,7 +14,6 @@ cp .env.example .env
 ```sh
 npm install
 npm run dev
-npm run build
 ```
 
 ## Tecnologias utilizadas
